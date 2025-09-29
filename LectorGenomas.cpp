@@ -11,12 +11,12 @@
  */
 class LectorGenomas {
 private:
-    std::string genomicData;              // Almacena toda la secuencia genómica concatenada
-    size_t currentPosition;               // Posición actual en la secuencia
+    std::string genomicData;              
+    size_t currentPosition;               
     std::vector<std::string> fastaFiles;  // Lista de archivos FASTA
-    size_t currentFileIndex;              // Índice del archivo actual
-    std::string currentFilename;          // Nombre del archivo actual
-    std::string genomasDirectory;         // Directorio de genomas
+    size_t currentFileIndex;              
+    std::string currentFilename;          
+    std::string genomasDirectory;         
 
 public:
     /**
@@ -72,7 +72,7 @@ public:
         
         currentFilename = fastaFiles[currentFileIndex];
         loadFastaFile(currentFilename);
-        currentPosition = 0; // Reiniciar posición para el nuevo archivo
+        currentPosition = 0;
     }
 
     /**
@@ -89,7 +89,7 @@ public:
         genomicData.clear();
         
         while (std::getline(file, line)) {
-            // Saltamos las líneas que empiezan con '>' (cabeceras FASTA)
+            // Saltamos las líneas que empiezan con '>'
             if (!line.empty() && line[0] != '>') {
                 // Concatenamos la línea eliminando saltos de línea
                 genomicData += line;
@@ -101,9 +101,6 @@ public:
         if (genomicData.empty()) {
             throw std::runtime_error("El archivo no contiene datos genómicos válidos");
         }
-        
-        std::cout << "Archivo cargado: " << filename << std::endl;
-        std::cout << "Longitud total de la secuencia: " << genomicData.length() << " nucleótidos" << std::endl;
     }
 
     /**
@@ -118,9 +115,7 @@ public:
             throw std::invalid_argument("El valor de k debe ser mayor que 0");
         }
         
-        // Verificamos si hay suficientes nucleótidos restantes en el archivo actual
         while (currentPosition + k > genomicData.length()) {
-            // Si no hay más nucleótidos en este archivo, intentar pasar al siguiente
             if (hasMoreFiles()) {
                 std::cout << "Terminando archivo: " << currentFilename << std::endl;
                 nextFile();
@@ -132,10 +127,7 @@ public:
         
         // Extraemos el k-mer desde la posición actual
         std::string kmer = genomicData.substr(currentPosition, k);
-        
-        // Avanzamos la posición en 1 para la siguiente llamada
         currentPosition++;
-        
         return kmer;
     }
 
@@ -267,17 +259,3 @@ public:
         }
     }
 };
-
-/**
- * Función de ejemplo que demuestra el uso de la clase LectorGenomas con múltiples archivos
- */
-
-
-
-/**
- * Función principal de demostración
- */
-/* int main() {
-    //ejemploDeUso();
-    return 0;
-} */
