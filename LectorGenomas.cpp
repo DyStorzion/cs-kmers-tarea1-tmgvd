@@ -117,9 +117,9 @@ public:
         
         while (currentPosition + k > genomicData.length()) {
             if (hasMoreFiles()) {
-                std::cout << "Terminando archivo: " << currentFilename << std::endl;
+                //std::cout << "Terminando archivo: " << currentFilename << std::endl;
                 nextFile();
-                std::cout << "Cambiando a archivo: " << currentFilename << std::endl;
+                //std::cout << "Cambiando a archivo: " << currentFilename << std::endl;
             } else {
                 return ""; // No hay más k-mers disponibles en ningún archivo
             }
