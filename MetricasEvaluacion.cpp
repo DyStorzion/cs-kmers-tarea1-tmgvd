@@ -52,6 +52,96 @@ public:
         return calcularMetricas(hh_estimados, hh_reales);
     }
 
+    // Estructura para métricas de error en frecuencias
+    struct MetricasError {
+        double error_absoluto_medio;
+        double error_relativo_medio;
+        double error_cuadratico_medio;
+        double raiz_error_cuadratico;
+        int kmers_comparados; 
+        double correlacion;           
+    };
+
+    // Método principal para calcular errores en frecuencias estimadas vs reales
+    MetricasError calcularErroresFrecuencias(const std::vector<std::pair<std::string, int>>& estimaciones,
+        const std::vector<std::pair<std::string, int>>& valores_reales,
+        bool solo_heavy_hitters = false,
+        int umbral_estimado = -1,
+        int umbral_real = -1) {
+        
+        std::unordered_map<std::string, int> mapa_estimaciones;
+        std::unordered_map<std::string, int> mapa_reales;
+
+        for (const auto& par : estimaciones) {
+            mapa_estimaciones[par.first] = par.second;
+        }
+        for (const auto& par : valores_reales) {
+            mapa_reales[par.first] = par.second;
+        }
+
+        
+        std::vector<std::string> kmers_a_evaluar;
+        
+        if (solo_heavy_hitters) {
+            // Usar heavy hitters de ambos conjuntos
+            std::unordered_set<std::string> hh_estimados = crearConjuntoHH(estimaciones, umbral_estimado);
+            std::unordered_set<std::string> hh_reales = crearConjuntoHH(valores_reales, umbral_real);
+            
+            // Unión de ambos conjuntos de heavy hitters
+            for (const auto& kmer : hh_estimados) {
+                kmers_a_evaluar.push_back(kmer);
+            }
+            for (const auto& kmer : hh_reales) {
+                if (std::find(kmers_a_evaluar.begin(), kmers_a_evaluar.end(), kmer) == kmers_a_evaluar.end()) {
+                    kmers_a_evaluar.push_back(kmer);
+                }
+            }
+        } else {
+            // Usar todos los k-mers que aparecen en ambos conjuntos
+            for (const auto& par : estimaciones) {
+                if (mapa_reales.find(par.first) != mapa_reales.end()) {
+                    kmers_a_evaluar.push_back(par.first);
+                }
+            }
+        }
+
+        return calcularMetricasErrorInternas(mapa_estimaciones, mapa_reales, kmers_a_evaluar);
+    }
+
+    // Método para mostrar análisis detallado de errores
+    void mostrarAnalisisErrores(const std::vector<std::pair<std::string, int>>& estimaciones,
+        const std::vector<std::pair<std::string, int>>& valores_reales,
+        bool solo_heavy_hitters = false,
+        int umbral_estimado = -1,
+        int umbral_real = -1) {
+        MetricasError metricas = calcularErroresFrecuencias(estimaciones, valores_reales, 
+                                                          solo_heavy_hitters, umbral_estimado, umbral_real);
+
+        std::cout << "\n=== ANÁLISIS DE ERRORES EN FRECUENCIAS ===" << std::endl;
+        if (solo_heavy_hitters) {
+            std::cout << "Análisis limitado a Heavy Hitters (Umbral Est: " << umbral_estimado 
+                      << ", Umbral Real: " << umbral_real << ")" << std::endl;
+        } else {
+            std::cout << "Análisis de todos los k-mers comunes" << std::endl;
+        }
+        
+        std::cout << "\nMÉTRICAS DE ERROR:" << std::endl;
+        std::cout << "K-mers comparados: " << metricas.kmers_comparados << std::endl;
+        std::cout << "Error Absoluto Medio (MAE): " << std::fixed << std::setprecision(2) 
+                  << metricas.error_absoluto_medio << std::endl;
+        std::cout << "Error Relativo Medio (MRE): " << std::fixed << std::setprecision(2) 
+                  << metricas.error_relativo_medio << "%" << std::endl;
+        std::cout << "Error Cuadrático Medio (MSE): " << std::fixed << std::setprecision(2) 
+                  << metricas.error_cuadratico_medio << std::endl;
+        std::cout << "Raíz Error Cuadrático (RMSE): " << std::fixed << std::setprecision(2) 
+                  << metricas.raiz_error_cuadratico << std::endl;
+        std::cout << "Correlación de Pearson: " << std::fixed << std::setprecision(4) 
+                  << metricas.correlacion << std::endl;
+
+        mostrarEjemplosErrores(estimaciones, valores_reales, solo_heavy_hitters, 
+                             umbral_estimado, umbral_real);
+    }
+
     // Método para evaluar con diferentes umbrales y encontrar el óptimo
     void evaluarMultiplesUmbrales(const std::vector<std::pair<std::string, int>>& estimaciones,
         const std::vector<std::pair<std::string, int>>& valores_reales,
@@ -262,6 +352,161 @@ private:
             if (hh_estimados.find(kmer) == hh_estimados.end()) {
                 std::cout << "  " << kmer.substr(0, 15) << "..." << std::endl;
                 if (++count >= 3) break;
+            }
+        }
+    }
+
+    // Método interno para calcular métricas de error
+    MetricasError calcularMetricasErrorInternas(const std::unordered_map<std::string, int>& mapa_estimaciones,
+        const std::unordered_map<std::string, int>& mapa_reales,
+        const std::vector<std::string>& kmers_a_evaluar) {
+        MetricasError metricas = {0.0, 0.0, 0.0, 0.0, 0, 0.0};
+
+        if (kmers_a_evaluar.empty()) {
+            return metricas;
+        }
+
+        std::vector<double> errores_absolutos;
+        std::vector<double> errores_relativos;
+        std::vector<int> valores_estimados;
+        std::vector<int> valores_reales;
+
+        for (const std::string& kmer : kmers_a_evaluar) {
+            auto it_est = mapa_estimaciones.find(kmer);
+            auto it_real = mapa_reales.find(kmer);
+
+            if (it_est != mapa_estimaciones.end() && it_real != mapa_reales.end()) {
+                int estimado = it_est->second;
+                int real = it_real->second;
+
+                double error_abs = std::abs(estimado - real);
+                errores_absolutos.push_back(error_abs);
+
+                if (real > 0) {
+                    double error_rel = (error_abs * 100.0) / real;
+                    errores_relativos.push_back(error_rel);
+                }
+
+                valores_estimados.push_back(estimado);
+                valores_reales.push_back(real);
+                metricas.kmers_comparados++;
+            }
+        }
+        if (metricas.kmers_comparados > 0) {
+            // MAE
+            double suma_abs = 0.0;
+            for (double error : errores_absolutos) {
+                suma_abs += error;
+            }
+            metricas.error_absoluto_medio = suma_abs / metricas.kmers_comparados;
+
+            // MRE
+            if (!errores_relativos.empty()) {
+                double suma_rel = 0.0;
+                for (double error : errores_relativos) {
+                    suma_rel += error;
+                }
+                metricas.error_relativo_medio = suma_rel / errores_relativos.size();
+            }
+
+            // MSE
+            double suma_cuadrados = 0.0;
+            for (double error : errores_absolutos) {
+                suma_cuadrados += error * error;
+            }
+            metricas.error_cuadratico_medio = suma_cuadrados / metricas.kmers_comparados;
+            metricas.raiz_error_cuadratico = std::sqrt(metricas.error_cuadratico_medio);
+
+            // Correlación de Pearson
+            metricas.correlacion = calcularCorrelacion(valores_estimados, valores_reales);
+        }
+
+        return metricas;
+    }
+
+    // Calcular correlación de Pearson
+    double calcularCorrelacion(const std::vector<int>& x, const std::vector<int>& y) {
+        if (x.size() != y.size() || x.size() < 2) {
+            return 0.0;
+        }
+
+        int n = x.size();
+        double media_x = 0.0, media_y = 0.0;
+
+        for (int i = 0; i < n; i++) {
+            media_x += x[i];
+            media_y += y[i];
+        }
+        media_x /= n;
+        media_y /= n;
+
+        double numerador = 0.0;
+        double suma_x2 = 0.0, suma_y2 = 0.0;
+
+        for (int i = 0; i < n; i++) {
+            double dx = x[i] - media_x;
+            double dy = y[i] - media_y;
+            numerador += dx * dy;
+            suma_x2 += dx * dx;
+            suma_y2 += dy * dy;
+        }
+
+        double denominador = std::sqrt(suma_x2 * suma_y2);
+        return (denominador > 0.0) ? (numerador / denominador) : 0.0;
+    }
+
+    // Mostrar ejemplos detallados de errores
+    void mostrarEjemplosErrores(
+        const std::vector<std::pair<std::string, int>>& estimaciones,
+        const std::vector<std::pair<std::string, int>>& valores_reales,
+        bool solo_heavy_hitters,
+        int umbral_estimado,
+        int umbral_real
+    ) {
+        std::unordered_map<std::string, int> mapa_estimaciones;
+        std::unordered_map<std::string, int> mapa_reales;
+
+        for (const auto& par : estimaciones) {
+            mapa_estimaciones[par.first] = par.second;
+        }
+        for (const auto& par : valores_reales) {
+            mapa_reales[par.first] = par.second;
+        }
+
+        std::cout << "\nEJEMPLOS DE ERRORES (primeros 10 k-mers):" << std::endl;
+        std::cout << std::setw(25) << "K-mer" 
+                  << std::setw(10) << "Estimado" 
+                  << std::setw(10) << "Real" 
+                  << std::setw(12) << "Error Abs" 
+                  << std::setw(12) << "Error Rel %" << std::endl;
+        std::cout << std::string(69, '-') << std::endl;
+
+        int count = 0;
+        for (const auto& par : estimaciones) {
+            const std::string& kmer = par.first;
+            int estimado = par.second;
+            
+            auto it_real = mapa_reales.find(kmer);
+            if (it_real != mapa_reales.end()) {
+                int real = it_real->second;
+                
+                // Si solo_heavy_hitters, verificar que sea HH
+                if (solo_heavy_hitters) {
+                    if (estimado < umbral_estimado && real < umbral_real) {
+                        continue;
+                    }
+                }
+                
+                double error_abs = std::abs(estimado - real);
+                double error_rel = (real > 0) ? (error_abs * 100.0 / real) : 0.0;
+                
+                std::cout << std::setw(25) << kmer.substr(0, 20) + "..."
+                          << std::setw(10) << estimado
+                          << std::setw(10) << real
+                          << std::setw(12) << std::fixed << std::setprecision(1) << error_abs
+                          << std::setw(12) << std::fixed << std::setprecision(1) << error_rel << std::endl;
+                
+                if (++count >= 10) break;
             }
         }
     }
