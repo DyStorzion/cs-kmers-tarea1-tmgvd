@@ -1,5 +1,26 @@
 #include "sketchs/countsketch.hpp"
 #include "utils/LectorGenomas.hpp"
+#include <unordered_set>
+#include <algorithm>
+
+// Función para obtener k-mer canónico
+std::string getCanonicalKmer(const std::string& kmer) {
+    std::string revComp = kmer;
+    
+    // Crear complemento reverso
+    for (char& c : revComp) {
+        switch(c) {
+            case 'A': c = 'T'; break;
+            case 'T': c = 'A'; break;
+            case 'C': c = 'G'; break;
+            case 'G': c = 'C'; break;
+        }
+    }
+    std::reverse(revComp.begin(), revComp.end());
+    
+    // Retornar el lexicográficamente menor
+    return std::min(kmer, revComp);
+}
 
 int main() {
     try {
@@ -18,17 +39,16 @@ int main() {
         int processedFiles = 0;
         
         
-        // Colección de k-mers candidatos para verificar
-        std::unordered_map<std::string, bool> candidateKmers;
+        // Colección de TODOS los k-mers únicos para evaluación completa
+        std::unordered_set<std::string> uniqueKmers;
         
         do {
             std::cout << "Procesando archivo " << (processedFiles + 1) << ": " 
                      << reader.getCurrentFilename() << std::endl;
             
             long long fileKmers = 0;
-            int candidateCounter = 0;
             
-            while (reader.hasMoreKmers(k) && fileKmers < 2000000) { // Límite por archivo
+            while (reader.hasMoreKmers(k) && fileKmers < 2000000) { // Límite por archivo para pruebas
                 std::string kmer = reader.getNextKmer(k);
                 if (!kmer.empty()) {
                     // Verificar bases válidas
@@ -41,19 +61,16 @@ int main() {
                     }
                     
                     if (validKmer) {
-                        sketch.insert(kmer);
+                        // Obtener k-mer canónico
+                        std::string canonical = getCanonicalKmer(kmer);
+                        sketch.insert(canonical);
+                        uniqueKmers.insert(canonical);  // Guardar todos los k-mers únicos
                         fileKmers++;
                         totalKmers++;
                         
-                        // Recolectar k-mers como candidatos a heavy hitters
-                        if (candidateCounter % 1000 == 0) { // Cada 1000 k-mers
-                            candidateKmers[kmer] = true;
-                        }
-                        candidateCounter++;
-                        
                         // Progreso
                         if (totalKmers % 500000 == 0) {
-                            std::cout << "  Procesados: " << totalKmers << " k-mers..." << std::endl;
+                            std::cout << "  Procesados: " << totalKmers << " k-mers, Únicos: " << uniqueKmers.size() << std::endl;
                         }
                     }
                 }
@@ -67,25 +84,36 @@ int main() {
         
         std::cout << "\n=== Estadísticas del procesamiento ===" << std::endl;
         std::cout << "Total de k-mers procesados: " << totalKmers << std::endl;
+        std::cout << "K-mers únicos encontrados: " << uniqueKmers.size() << std::endl;
         std::cout << "Archivos procesados: " << processedFiles << std::endl;
-        std::cout << "K-mers candidatos a evaluar: " << candidateKmers.size() << std::endl;
         
         // EXTRACCIÓN DE HEAVY HITTERS
         std::cout << "\n=== Extrayendo Heavy Hitters ===" << std::endl;
         
+        // Calcular umbral correcto basado en el total de k-mers procesados
+        double phi = 2e-6;  // Umbral que sabemos funciona bien para 21-mers
+        int k21mersBoundary = static_cast<int>(phi * totalKmers);
+        
+        std::cout << "Umbral φ = " << phi << std::endl;
+        std::cout << "Umbral frecuencia = " << k21mersBoundary << std::endl;
+        
         std::vector<std::pair<std::string, int>> heavyHitters;
-        int k21mersAmount = candidateKmers.size();
-        float k21mersThreshold = 1e-3f;
 
-        int k21mersBoundary = k21mersAmount * k21mersThreshold;
-
-        // Evaluar cada k-mer candidato
-        for (const auto& pair : candidateKmers) {
-            const std::string& kmer = pair.first;
+        // Evaluar TODOS los k-mers únicos
+        std::cout << "\nEvaluando " << uniqueKmers.size() << " k-mers únicos..." << std::endl;
+        int evaluatedCount = 0;
+        
+        for (const std::string& kmer : uniqueKmers) {
             int estimatedFreq = sketch.estimate(kmer);
             
             if (estimatedFreq >= k21mersBoundary) {
                 heavyHitters.emplace_back(kmer, estimatedFreq);
+            }
+            
+            evaluatedCount++;
+            if (evaluatedCount % 50000 == 0) {
+                std::cout << "Evaluados: " << evaluatedCount << "/" << uniqueKmers.size() 
+                         << ", HH encontrados: " << heavyHitters.size() << std::endl;
             }
         }
         
