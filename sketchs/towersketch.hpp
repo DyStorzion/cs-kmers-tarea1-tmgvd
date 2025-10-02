@@ -1,3 +1,7 @@
+#ifndef TOWER_SKETCH_H
+#define TOWER_SKETCH_H
+
+
 #include "murmurhash32.hpp"
 #include <climits>
 
@@ -57,6 +61,10 @@ public:
 
 };
 
+/**
+ * Tower Sketch: combinación de CountMinCU con contadores de 8, 16 y 32 bits
+ * 
+ */
 class TowerSketch
 {
 private:
@@ -106,3 +114,5 @@ public:
         return countMin8.getSize() + countMin16.getSize() + countMin32.getSize();
     }
 };
+
+#endif // TOWER_SKETCH_H

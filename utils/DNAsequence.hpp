@@ -1,3 +1,6 @@
+#ifndef DNASEQUENCE_H
+#define DNASEQUENCE_H
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
@@ -186,3 +189,6 @@ public:
         dna_chain = chain;
     }
 };
+
+
+#endif // DNASEQUENCE_H

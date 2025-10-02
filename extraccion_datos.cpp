@@ -1,5 +1,4 @@
-#include "DNAsequence.cpp"
-#include "LectorGenomas.cpp"
+#include "utils/LectorGenomas.hpp"
 #include <unordered_map>
 #include <iostream>
 #include <chrono>

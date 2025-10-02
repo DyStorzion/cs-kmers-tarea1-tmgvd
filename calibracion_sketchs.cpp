@@ -4,9 +4,9 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include "LectorGenomas.cpp"
-#include "towersketch.cpp"
-#include "countsketch.cpp"
+#include "sketchs/towersketch.hpp"
+#include "sketchs/countsketch.hpp"
+#include "utils/LectorGenomas.hpp"
 
 using namespace std;
 
@@ -83,6 +83,7 @@ int main() {
     vector<int> d_vals = {3, 5, 7};
     vector<int> w_vals = {500, 1000, 2000, 5000, 10000};
 
+    /*
     for (int d : d_vals) {
         for (int w : w_vals) {
             CountSketch cs(d, w);
@@ -103,8 +104,8 @@ int main() {
                  << " -> MAE=" << res.mae << ", MRE=" << res.mre << endl;
         }
     }
-
-    /*
+    */
+    
     for (int d : d_vals) {
         for (int w : w_vals) {
             TowerSketch ts(d, w);
@@ -117,7 +118,7 @@ int main() {
             }
 
             auto res = calcularErrores(groundTruth, ts);
-            size_t totalSize = ts.getMemoryBytes();
+            size_t totalSize = ts.getSize();
             out << "TS," << d << "," << w << "," << totalSize << ","
                 << res.mae << "," << res.mre << "\n";
 
@@ -125,7 +126,7 @@ int main() {
                  << " -> MAE=" << res.mae << ", MRE=" << res.mre << endl;
         }
     }
-    */
+    
    
     out.close();
     cout << "Resultados guardados en calibracion_sketches.csv" << endl;

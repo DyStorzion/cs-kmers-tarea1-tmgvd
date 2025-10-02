@@ -1,3 +1,6 @@
+#ifndef LECTORGENOMAS_H
+#define LECTORGENOMAS_H
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -259,3 +262,5 @@ public:
         }
     }
 };
+
+#endif // LECTORGENOMAS_H

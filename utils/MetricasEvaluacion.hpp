@@ -1,3 +1,6 @@
+#ifndef METRICASEVALUACION_H
+#define METRICASEVALUACION_H
+
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -511,3 +514,5 @@ private:
         }
     }
 };
+
+#endif // METRICASEVALUACION_H
