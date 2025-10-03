@@ -77,13 +77,15 @@ int main() {
     }
     cout << "Se cargaron " << groundTruth.size() << " k-mers únicos" << endl;
 
-    ofstream out("CSV/calibracion_sketches.csv");
+    std::string archivocsv = "CSV/calibracion_countsketch_" + std::to_string(k) + "mer.csv";
+    ofstream out(archivocsv);
     out << "sketch,d,w,tamano,mae,mre\n";
 
     vector<int> d_vals = {3, 5, 7};
-    vector<int> w_vals = {500, 1000, 2000, 5000, 10000};
+    vector<int> w_vals = {20000, 25000, 35000};
 
-    /*
+    
+    
     for (int d : d_vals) {
         for (int w : w_vals) {
             CountSketch cs(d, w);
@@ -104,32 +106,44 @@ int main() {
                  << " -> MAE=" << res.mae << ", MRE=" << res.mre << endl;
         }
     }
-    */
+    cout << "Resultados guardados en " << archivocsv << endl;
     
+    archivocsv = "CSV/calibracion_towersketch_" + std::to_string(k) + "mer.csv";
+    ofstream tsout(archivocsv);
+    tsout << "sketch,d,w8,w16,w32,tamano,mae,mre\n";
+
+    std::vector<int> w8_vals = {75000, 100000};
+    std::vector<int> w16_vals = {7500, 10000};
+    std::vector<int> w32_vals = {2000, 5000};
+
     for (int d : d_vals) {
-        for (int w : w_vals) {
-            TowerSketch ts(d, w);
+        for (int w8 : w8_vals) {
+            for (int w16 : w16_vals) {
+                for (int w32 : w32_vals) {
+                    TowerSketch ts(d, w8, d, w16, d, w32);
 
-            lector.reset();
-            while (lector.hasMoreKmers(k)) {
-                string kmer = lector.getNextKmer(k);
-                if (kmer.empty()) break;
-                ts.insert(kmer);
+                    lector.reset();
+                    while (lector.hasMoreKmers(k)) {
+                        string kmer = lector.getNextKmer(k);
+                        if (kmer.empty()) break;
+                        ts.insert(kmer);
+                    }
+
+                    auto res = calcularErrores(groundTruth, ts);
+                    size_t totalSize = ts.getSize();
+                    tsout << "TS," << d << "," << w8 << "," << w16 << "," << w32 << "," << totalSize << ","
+                        << res.mae << "," << res.mre << "\n";
+
+                    cout << "[TS] d=" << d << ", w8=" << w8 << ", w16=" << w16 << ", w32=" << w32
+                         << " -> MAE=" << res.mae << ", MRE=" << res.mre << endl;
+                }
             }
-
-            auto res = calcularErrores(groundTruth, ts);
-            size_t totalSize = ts.getSize();
-            out << "TS," << d << "," << w << "," << totalSize << ","
-                << res.mae << "," << res.mre << "\n";
-
-            cout << "[TS] d=" << d << ", w=" << w
-                 << " -> MAE=" << res.mae << ", MRE=" << res.mre << endl;
         }
     }
     
    
     out.close();
-    cout << "Resultados guardados en CSV/calibracion_sketches.csv" << endl;
+    cout << "Resultados guardados en " << archivocsv << endl;
 
     return 0;
 }
