@@ -205,19 +205,19 @@ public:
 
 int main() {
     std::cout << "╔══════════════════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "║           COMPARADOR DE HEAVY HITTERS                      ║" << std::endl;
-    std::cout << "║         CountSketch vs Ground Truth (desde CSV)             ║" << std::endl;
+    std::cout << "║           COMPARADOR DE HEAVY HITTERS 21-mers                ║" << std::endl;
+    std::cout << "║         CountSketch vs Ground Truth (desde CSV)              ║" << std::endl;
     std::cout << "╚══════════════════════════════════════════════════════════════╝" << std::endl;
     
     CompararHeavyHitters comparador;
     
     // Cargar datos desde CSV
-    if (!comparador.cargarCountSketch("countsketch_heavy_hitters.csv")) {
+    if (!comparador.cargarCountSketch("CSV/countsketch_heavy_hitters_21mers.csv")) {
         std::cout << "No se pudo cargar CountSketch CSV. Ejecuta calcular_cs.cpp primero." << std::endl;
         return 1;
     }
     
-    if (!comparador.cargarGroundTruth("ground_truth_21mers.csv")) {
+    if (!comparador.cargarGroundTruth("CSV/ground_truth_21mers.csv")) {
         std::cout << "No se pudo cargar Ground Truth CSV. Ejecuta extraccion_datos.cpp primero." << std::endl;
         return 1;
     }

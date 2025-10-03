@@ -77,7 +77,7 @@ int main() {
     }
     cout << "Se cargaron " << groundTruth.size() << " k-mers únicos" << endl;
 
-    ofstream out("calibracion_sketches.csv");
+    ofstream out("CSV/calibracion_sketches.csv");
     out << "sketch,d,w,tamano,mae,mre\n";
 
     vector<int> d_vals = {3, 5, 7};
@@ -129,7 +129,7 @@ int main() {
     
    
     out.close();
-    cout << "Resultados guardados en calibracion_sketches.csv" << endl;
+    cout << "Resultados guardados en CSV/calibracion_sketches.csv" << endl;
 
     return 0;
 }

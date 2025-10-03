@@ -170,7 +170,7 @@ int main(){
             }
         }
         
-        std::string csvFilename21 = "ground_truth_21mers.csv";
+        std::string csvFilename21 = "CSV/ground_truth_21mers.csv";
         std::ofstream csvFile21(csvFilename21);
         
         if (csvFile21.is_open()) {
@@ -196,7 +196,7 @@ int main(){
         }
         
         // Guardar ground truth 31-mers en CSV
-        std::string csvFilename31 = "ground_truth_31mers.csv";
+        std::string csvFilename31 = "CSV/ground_truth_31mers.csv";
         std::ofstream csvFile31(csvFilename31);
         
         if (csvFile31.is_open()) {

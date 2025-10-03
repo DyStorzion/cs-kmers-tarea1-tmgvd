@@ -130,7 +130,7 @@ std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, 
     }
     
     // Guardar en CSV
-    std::string csvFilename = "countsketch_heavy_hitters_" + std::to_string(k) + "mers.csv";
+    std::string csvFilename = "CSV/countsketch_heavy_hitters_" + std::to_string(k) + "mers.csv";
     std::ofstream csvFile(csvFilename);
     
     if (csvFile.is_open()) {
