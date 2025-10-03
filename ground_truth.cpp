@@ -6,7 +6,6 @@
 #include <fstream>
 #include <iomanip>
 
-// Función mejorada para obtener k-mer canónico usando strings (más simple)
 std::string getCanonicalKmer(const std::string& kmer) {
     std::string revComp = kmer;
     
@@ -29,10 +28,7 @@ int main(){
     try {
         std::cout << "=== Extracción de Ground Truth para Heavy Hitters ===" << std::endl;
         
-        // Crear lector de genomas
         LectorGenomas reader("Genomas");
-        
-        // Mapas para contar frecuencias exactas
         std::unordered_map<std::string, int> k21mers;
         std::unordered_map<std::string, int> k31mers;
         
@@ -41,8 +37,7 @@ int main(){
         long long totalKmers31 = 0;
         
         do {
-            // Extraer k-mers de longitud 21
-            reader.reset(); // Reiniciar posición para este archivo
+            reader.reset();
             while (reader.hasMoreKmers(21)) {
                 std::string kmer = reader.getNextKmer(21);
                 if (!kmer.empty()) {
@@ -82,7 +77,7 @@ int main(){
                     }
                 }
             }
-        } while (reader.nextFile()); // Procesar TODOS los archivos
+        } while (reader.nextFile());
         
         std::cout << "\n=== Estadísticas del procesamiento ===" << std::endl;
         std::cout << "Total 21-mers únicos: " << k21mers.size() << std::endl;
@@ -100,7 +95,6 @@ int main(){
         int k21mersBoundary = (int)(phi_21 * totalKmers21);
         int k31mersBoundary = (int)(phi_31 * totalKmers31);
         
-        // Analizar distribución de frecuencias para entender mejor los datos
         std::vector<int> frequencies21, frequencies31;
         
         for (const auto& kv : k21mers) {
@@ -121,25 +115,21 @@ int main(){
         std::cout << "31-mers: ϕ = " << phi_31 << ", N = " << totalKmers31 << std::endl;
         std::cout << "         Umbral = " << k31mersBoundary << " (= " << phi_31 << " × " << totalKmers31 << ")" << std::endl;
         
-        // Generar listas de heavy hitters exactos
         std::vector<std::pair<std::string, int>> heavyHitters21;
         std::vector<std::pair<std::string, int>> heavyHitters31;
         
-        // Identificar 21-mers heavy hitters
         for (const auto& kv : k21mers) {
             if (kv.second >= k21mersBoundary) {
                 heavyHitters21.emplace_back(kv.first, kv.second);
             }
         }
-        
-        // Identificar 31-mers heavy hitters
         for (const auto& kv : k31mers) {
             if (kv.second >= k31mersBoundary) {
                 heavyHitters31.emplace_back(kv.first, kv.second);
             }
         }
         
-        // Ordenar por frecuencia descendente
+        // Ordenar por frecuencia de mayor a menor
         std::sort(heavyHitters21.begin(), heavyHitters21.end(),
                  [](const auto& a, const auto& b) { return a.second > b.second; });
         std::sort(heavyHitters31.begin(), heavyHitters31.end(),
@@ -156,8 +146,6 @@ int main(){
             if (kv.second >= threshold31) count31++;
         }
         
-        
-        // Mostrar resultados para ϕ seleccionado
         std::cout << "\n=== GROUND TRUTH: Heavy Hitters ===" << std::endl;
         std::cout << "21-mers heavy hitters: " << heavyHitters21.size() << std::endl;
         std::cout << "31-mers heavy hitters: " << heavyHitters31.size() << std::endl;
@@ -182,7 +170,6 @@ int main(){
             }
         }
         
-        // Guardar ground truth 21-mers en CSV
         std::string csvFilename21 = "ground_truth_21mers.csv";
         std::ofstream csvFile21(csvFilename21);
         
@@ -202,10 +189,10 @@ int main(){
             }
             
             csvFile21.close();
-            std::cout << "\n💾 Ground Truth 21-mers guardado en: " << csvFilename21 << std::endl;
-            std::cout << "📊 Total de registros 21-mers: " << heavyHitters21.size() << std::endl;
+            std::cout << "\nGround Truth 21-mers guardado en: " << csvFilename21 << std::endl;
+            std::cout << "Total de registros 21-mers: " << heavyHitters21.size() << std::endl;
         } else {
-            std::cerr << "❌ Error: No se pudo crear el archivo CSV " << csvFilename21 << std::endl;
+            std::cerr << "Error: No se pudo crear el archivo CSV " << csvFilename21 << std::endl;
         }
         
         // Guardar ground truth 31-mers en CSV
@@ -228,10 +215,10 @@ int main(){
             }
             
             csvFile31.close();
-            std::cout << "💾 Ground Truth 31-mers guardado en: " << csvFilename31 << std::endl;
-            std::cout << "📊 Total de registros 31-mers: " << heavyHitters31.size() << std::endl;
+            std::cout << "Ground Truth 31-mers guardado en: " << csvFilename31 << std::endl;
+            std::cout << "Total de registros 31-mers: " << heavyHitters31.size() << std::endl;
         } else {
-            std::cerr << "❌ Error: No se pudo crear el archivo CSV " << csvFilename31 << std::endl;
+            std::cerr << "Error: No se pudo crear el archivo CSV " << csvFilename31 << std::endl;
         }
         
         std::cout << "\n=== Extracción Ground Truth completada ===" << std::endl;
