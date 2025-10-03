@@ -2,6 +2,9 @@
 #include "utils/LectorGenomas.hpp"
 #include <unordered_set>
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
+#include <chrono>
 
 // Función para obtener k-mer canónico
 std::string getCanonicalKmer(const std::string& kmer) {
@@ -22,7 +25,8 @@ std::string getCanonicalKmer(const std::string& kmer) {
     return std::min(kmer, revComp);
 }
 
-int main() {
+// Función para procesar k-mers de una longitud específica
+std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, const std::string& titulo) {
     try {
         // Parámetros del CountSketch
         int d = 8;       // Número de funciones hash
@@ -142,6 +146,32 @@ int main() {
         } else {
             std::cout << "\nNo se encontraron heavy hitters con umbral >= " << k21mersBoundary << std::endl;
         }
+        
+        // Guardar resultados en CSV
+        std::string csvFilename = "countsketch_heavy_hitters.csv";
+        std::ofstream csvFile(csvFilename);
+        
+        if (csvFile.is_open()) {
+            // Escribir header del CSV
+            csvFile << "rank,kmer,estimated_frequency,threshold_used,total_kmers,phi_value\n";
+            
+            // Escribir datos de heavy hitters
+            for (size_t i = 0; i < heavyHitters.size(); i++) {
+                csvFile << (i + 1) << "," 
+                       << heavyHitters[i].first << "," 
+                       << heavyHitters[i].second << "," 
+                       << k21mersBoundary << "," 
+                       << totalKmers << "," 
+                       << std::scientific << std::setprecision(1) << phi << "\n";
+            }
+            
+            csvFile.close();
+            std::cout << "\n💾 Heavy hitters guardados en: " << csvFilename << std::endl;
+            std::cout << "📊 Total de registros: " << heavyHitters.size() << std::endl;
+        } else {
+            std::cerr << "❌ Error: No se pudo crear el archivo CSV " << csvFilename << std::endl;
+        }
+        
         std::cout << "\n=== Extracción completada ===" << std::endl;
         
     } catch (const std::exception& e) {

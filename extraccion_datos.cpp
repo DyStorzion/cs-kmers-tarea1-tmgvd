@@ -3,6 +3,8 @@
 #include <iostream>
 #include <chrono>
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
 
 // Función mejorada para obtener k-mer canónico usando strings (más simple)
 std::string getCanonicalKmer(const std::string& kmer) {
@@ -179,6 +181,60 @@ int main(){
                          << "\t\t" << heavyHitters31[i].first << std::endl;
             }
         }
+        
+        // Guardar ground truth 21-mers en CSV
+        std::string csvFilename21 = "ground_truth_21mers.csv";
+        std::ofstream csvFile21(csvFilename21);
+        
+        if (csvFile21.is_open()) {
+            // Escribir header del CSV
+            csvFile21 << "rank,kmer,real_frequency,threshold_used,total_kmers,phi_value,kmer_length\n";
+            
+            // Escribir datos de heavy hitters 21-mers
+            for (size_t i = 0; i < heavyHitters21.size(); i++) {
+                csvFile21 << (i + 1) << "," 
+                         << heavyHitters21[i].first << "," 
+                         << heavyHitters21[i].second << "," 
+                         << k21mersBoundary << "," 
+                         << totalKmers21 << "," 
+                         << std::scientific << std::setprecision(1) << phi_21 << "," 
+                         << "21\n";
+            }
+            
+            csvFile21.close();
+            std::cout << "\n💾 Ground Truth 21-mers guardado en: " << csvFilename21 << std::endl;
+            std::cout << "📊 Total de registros 21-mers: " << heavyHitters21.size() << std::endl;
+        } else {
+            std::cerr << "❌ Error: No se pudo crear el archivo CSV " << csvFilename21 << std::endl;
+        }
+        
+        // Guardar ground truth 31-mers en CSV
+        std::string csvFilename31 = "ground_truth_31mers.csv";
+        std::ofstream csvFile31(csvFilename31);
+        
+        if (csvFile31.is_open()) {
+            // Escribir header del CSV
+            csvFile31 << "rank,kmer,real_frequency,threshold_used,total_kmers,phi_value,kmer_length\n";
+            
+            // Escribir datos de heavy hitters 31-mers
+            for (size_t i = 0; i < heavyHitters31.size(); i++) {
+                csvFile31 << (i + 1) << "," 
+                         << heavyHitters31[i].first << "," 
+                         << heavyHitters31[i].second << "," 
+                         << k31mersBoundary << "," 
+                         << totalKmers31 << "," 
+                         << std::scientific << std::setprecision(1) << phi_31 << "," 
+                         << "31\n";
+            }
+            
+            csvFile31.close();
+            std::cout << "💾 Ground Truth 31-mers guardado en: " << csvFilename31 << std::endl;
+            std::cout << "📊 Total de registros 31-mers: " << heavyHitters31.size() << std::endl;
+        } else {
+            std::cerr << "❌ Error: No se pudo crear el archivo CSV " << csvFilename31 << std::endl;
+        }
+        
+        std::cout << "\n=== Extracción Ground Truth completada ===" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
