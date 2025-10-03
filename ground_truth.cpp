@@ -89,7 +89,7 @@ int main(){
         
         // Definir ϕ (ej: 10^-3 a 10^-5) 
         double phi_21 = 2e-6;
-        double phi_31 = 6e-6;  
+        double phi_31 = 4e-6;  
         
         // Calcular umbrales: f(e) ≥ ϕN
         int k21mersBoundary = (int)(phi_21 * totalKmers21);

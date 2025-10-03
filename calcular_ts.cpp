@@ -1,17 +1,11 @@
-#include "sketchs/countsketch.hpp"
+#include "sketchs/towersketch.hpp"
 #include "utils/LectorGenomas.hpp"
-#include <unordered_set>
-#include <algorithm>
-#include <fstream>
-#include <iomanip>
-#include <chrono>
 
-// Función para obtener k-mer canónico
-std::string getCanonicalKmer(const std::string& kmer) {
-    std::string revComp = kmer;
-    
-    // Crear complemento reverso
-    for (char& c : revComp) {
+#include <unordered_set>
+
+std::string getCanonical(const std::string &s) {
+    std::string rc = s;
+    for (char &c : rc) {
         switch(c) {
             case 'A': c = 'T'; break;
             case 'T': c = 'A'; break;
@@ -19,21 +13,17 @@ std::string getCanonicalKmer(const std::string& kmer) {
             case 'G': c = 'C'; break;
         }
     }
-    std::reverse(revComp.begin(), revComp.end());
+    std::reverse(rc.begin(), rc.end());
     
-    // Retornar el lexicográficamente menor
-    return std::min(kmer, revComp);
+    return std::min(s, rc); // lexicográficamente mínimo
 }
 
 // Función para procesar k-mers de una longitud específica
-std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, const std::string& titulo) {
-    std::cout << "\n=== " << titulo << " ===" << std::endl;
+std::vector<std::pair<std::string, int>> procesarTowerSketch(int k, double phi) {
+    //Parámetros del Tower Sketch
+    int d = 7, w8 = 140000, w16 = 1, w32 = 1;
     
-    //Parámetros del CountSketch
-    int d = 7;
-    int w = 35000;
-    
-    CountSketch sketch(d, w);
+    TowerSketch sketch(d, w8, d, w16, d, w32);
     LectorGenomas reader("Genomas");
     
     //Estadísticas
@@ -63,7 +53,7 @@ std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, 
                 }
                 
                 if (validKmer) {
-                    std::string canonical = getCanonicalKmer(kmer);
+                    std::string canonical = getCanonical(kmer);
                     sketch.insert(canonical);
                     uniqueKmers.insert(canonical);
                     fileKmers++;
@@ -130,7 +120,7 @@ std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, 
     }
     
     // Guardar en CSV
-    std::string csvFilename = "CSV/countsketch_heavy_hitters_" + std::to_string(k) + "mers.csv";
+    std::string csvFilename = "CSV/towerSketch_heavy_hitters_" + std::to_string(k) + "mers.csv";
     std::ofstream csvFile(csvFilename);
     
     if (csvFile.is_open()) {
@@ -159,20 +149,20 @@ std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, 
 int main() {
     try {
         std::cout << "|--------------------------------------------------------------|" << std::endl;
-        std::cout << "|           COUNTSKETCH PARA 21-MERS Y 31-MERS                 |" << std::endl;
+        std::cout << "|           TOWER SKETCH PARA 21-MERS Y 31-MERS                 |" << std::endl;
         std::cout << "|--------------------------------------------------------------|" << std::endl;
         
         LectorGenomas testReader("Genomas");
         
-        auto heavyHitters21 = procesarCountSketch(21, 2e-6, "Procesando 21-mers");  
-        auto heavyHitters31 = procesarCountSketch(31, 4e-6, "Procesando 31-mers");
+        auto heavyHitters21 = procesarTowerSketch(21, 2e-6);  
+        auto heavyHitters31 = procesarTowerSketch(31, 4e-6);
         
         // Resumen final
         std::cout << "\n|----------------------------------------------------------------|" << std::endl;
         std::cout << "|                    RESUMEN FINAL                               |" << std::endl;
         std::cout << "|----------------------------------------------------------------|" << std::endl;
         
-        std::cout << "21-mers Heavy Hitters: " << heavyHitters21.size() << std::endl;
+        // std::cout << "21-mers Heavy Hitters: " << heavyHitters21.size() << std::endl;
         std::cout << "31-mers Heavy Hitters: " << heavyHitters31.size() << std::endl;
         
         std::cout << "\nArchivos generados:" << std::endl;

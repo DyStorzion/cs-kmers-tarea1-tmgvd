@@ -100,14 +100,14 @@ public:
     }
 
     int estimate(const std::string &kmer) {
-        uint32_t est32 = countMin32.estimate(kmer);
-        if (est32 > 0) return est32;
+        uint8_t est8 = countMin8.estimate(kmer);
+        if (est8 < UINT8_MAX) return est8;
 
         uint16_t est16 = countMin16.estimate(kmer);
-        if (est16 > 0) return est16;
+        if (est16 < UINT16_MAX) return UINT8_MAX + est16;
 
-        uint8_t est8 = countMin8.estimate(kmer);
-        return est8;
+        uint32_t est32 = countMin32.estimate(kmer);
+        return UINT8_MAX + UINT16_MAX + est32;
     }
 
     size_t getSize() {
