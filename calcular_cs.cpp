@@ -27,152 +27,155 @@ std::string getCanonicalKmer(const std::string& kmer) {
 
 // Función para procesar k-mers de una longitud específica
 std::vector<std::pair<std::string, int>> procesarCountSketch(int k, double phi, const std::string& titulo) {
-    try {
-        // Parámetros del CountSketch
-        int d = 8;       // Número de funciones hash
-        int w = 50000;   // Tamaño de cada tabla hash
-        int k = 21;      // Longitud de k-mers
-        
-        CountSketch sketch(d, w);
+    std::cout << "\n=== " << titulo << " ===" << std::endl;
     
-        LectorGenomas reader("Genomas");
-        std::cout << "Archivos FASTA encontrados: " << reader.getTotalFiles() << std::endl;
+    //Parámetros del CountSketch
+    int d = 8;
+    int w = 50000;
+    
+    CountSketch sketch(d, w);
+    LectorGenomas reader("Genomas");
+    
+    //Estadísticas
+    long long totalKmers = 0;
+    int processedFiles = 0;
+    std::unordered_set<std::string> uniqueKmers;
+    
+    std::cout << "Procesando k-mers de longitud " << k << std::endl;
+    
+    do {
+        if (processedFiles % 10 == 0) {
+            std::cout << "Procesando archivo " << (processedFiles + 1) << std::endl;
+        }
         
-        // Estadísticas
-        long long totalKmers = 0;
-        int processedFiles = 0;
+        long long fileKmers = 0;
+        reader.reset();
         
-        
-        // Colección de TODOS los k-mers únicos para evaluación completa
-        std::unordered_set<std::string> uniqueKmers;
-        
-        do {
-            std::cout << "Procesando archivo " << (processedFiles + 1) << ": " 
-                     << reader.getCurrentFilename() << std::endl;
-            
-            long long fileKmers = 0;
-            
-            while (reader.hasMoreKmers(k) && fileKmers < 2000000) { // Límite por archivo para pruebas
-                std::string kmer = reader.getNextKmer(k);
-                if (!kmer.empty()) {
-                    // Verificar bases válidas
-                    bool validKmer = true;
-                    for (char c : kmer) {
-                        if (c != 'A' && c != 'T' && c != 'C' && c != 'G') {
-                            validKmer = false;
-                            break;
-                        }
+        while (reader.hasMoreKmers(k)) {
+            std::string kmer = reader.getNextKmer(k);
+            if (!kmer.empty()) {
+                bool validKmer = true;
+                for (char c : kmer) {
+                    if (c != 'A' && c != 'T' && c != 'C' && c != 'G') {
+                        validKmer = false;
+                        break;
                     }
+                }
+                
+                if (validKmer) {
+                    std::string canonical = getCanonicalKmer(kmer);
+                    sketch.insert(canonical);
+                    uniqueKmers.insert(canonical);
+                    fileKmers++;
+                    totalKmers++;
                     
-                    if (validKmer) {
-                        // Obtener k-mer canónico
-                        std::string canonical = getCanonicalKmer(kmer);
-                        sketch.insert(canonical);
-                        uniqueKmers.insert(canonical);  // Guardar todos los k-mers únicos
-                        fileKmers++;
-                        totalKmers++;
-                        
-                        // Progreso
-                        if (totalKmers % 500000 == 0) {
-                            std::cout << "  Procesados: " << totalKmers << " k-mers, Únicos: " << uniqueKmers.size() << std::endl;
-                        }
+                    // Progreso cada 1M k-mers
+                    if (totalKmers % 1000000 == 0) {
+                        std::cout << "\rProcesados: " << totalKmers << " k-mers, Únicos: " << uniqueKmers.size() << std::flush;
                     }
                 }
             }
-            
-            std::cout << "  K-mers procesados: " << fileKmers << std::endl;
-            processedFiles++;
-            
-        } while (reader.nextFile());
+        }
+        std::cout << std::endl;
         
+        processedFiles++;
         
-        std::cout << "\n=== Estadísticas del procesamiento ===" << std::endl;
-        std::cout << "Total de k-mers procesados: " << totalKmers << std::endl;
-        std::cout << "K-mers únicos encontrados: " << uniqueKmers.size() << std::endl;
-        std::cout << "Archivos procesados: " << processedFiles << std::endl;
-        
-        // EXTRACCIÓN DE HEAVY HITTERS
-        std::cout << "\n=== Extrayendo Heavy Hitters ===" << std::endl;
-        
-        // Calcular umbral correcto basado en el total de k-mers procesados
-        double phi = 2e-6;  // Umbral que sabemos funciona bien para 21-mers
-        int k21mersBoundary = static_cast<int>(phi * totalKmers);
-        
-        std::cout << "Umbral φ = " << phi << std::endl;
-        std::cout << "Umbral frecuencia = " << k21mersBoundary << std::endl;
-        
-        std::vector<std::pair<std::string, int>> heavyHitters;
+    } while (reader.nextFile());
+    
+    std::cout << "\nEstadísticas " << k << "-mers:" << std::endl;
+    std::cout << "Total procesados: " << totalKmers << std::endl;
+    std::cout << "Únicos encontrados: " << uniqueKmers.size() << std::endl;
+    std::cout << "Archivos procesados: " << processedFiles << std::endl;
+    
 
-        // Evaluar TODOS los k-mers únicos
-        std::cout << "\nEvaluando " << uniqueKmers.size() << " k-mers únicos..." << std::endl;
-        int evaluatedCount = 0;
+    int umbralFrecuencia = static_cast<int>(phi * totalKmers);
+    std::cout << "Umbral φ = " << phi << " frecuencia >= " << umbralFrecuencia << std::endl;
+    
+    std::vector<std::pair<std::string, int>> heavyHitters;
+    std::cout << "Evaluando " << uniqueKmers.size() << " k-mers únicos" << std::endl;
+    
+    int evaluatedCount = 0;
+    for (const std::string& kmer : uniqueKmers) {
+        int estimatedFreq = sketch.estimate(kmer);
         
-        for (const std::string& kmer : uniqueKmers) {
-            int estimatedFreq = sketch.estimate(kmer);
-            
-            if (estimatedFreq >= k21mersBoundary) {
-                heavyHitters.emplace_back(kmer, estimatedFreq);
-            }
-            
-            evaluatedCount++;
-            if (evaluatedCount % 50000 == 0) {
-                std::cout << "Evaluados: " << evaluatedCount << "/" << uniqueKmers.size() 
-                         << ", HH encontrados: " << heavyHitters.size() << std::endl;
-            }
+        if (estimatedFreq >= umbralFrecuencia) {
+            heavyHitters.emplace_back(kmer, estimatedFreq);
         }
         
-        // Ordenar por frecuencia descendente
-        std::sort(heavyHitters.begin(), heavyHitters.end(), 
-                 [](const auto& a, const auto& b) { return a.second > b.second; });
+        evaluatedCount++;
+        if (evaluatedCount % 100000 == 0) {
+            std::cout << "\rEvaluados: " << evaluatedCount << "/" << uniqueKmers.size() 
+                     << ", HH encontrados: " << heavyHitters.size() << std::flush;
+        }
+    }
+    std::cout << std::endl;
+    
+    // Ordenar por frecuencia de mayor amenor
+    std::sort(heavyHitters.begin(), heavyHitters.end(), 
+             [](const auto& a, const auto& b) { return a.second > b.second; });
+    
+    std::cout << "Heavy hitters " << k << "-mers encontrados: " << heavyHitters.size() << std::endl;
+    
+    // Mostrar top 10
+    if (!heavyHitters.empty()) {
+        std::cout << "\nTop 10 Heavy Hitters " << k << "-mers:" << std::endl;
+        std::cout << "Rank\tFrecuencia\tK-mer" << std::endl;
+        std::cout << "----------------------------------------" << std::endl;
         
-        // Mostrar resultados
-        std::cout << "\n=== RESULTADOS: Heavy Hitters encontrados ===" << std::endl;
-        std::cout << "Total de heavy hitters (freq >= " << k21mersBoundary << "): " << heavyHitters.size() << std::endl;
+        int showCount = std::min(10, (int)heavyHitters.size());
+        for (int i = 0; i < showCount; i++) {
+            std::cout << (i+1) << "\t" << heavyHitters[i].second 
+                     << "\t\t" << heavyHitters[i].first << std::endl;
+        }
+    }
+    
+    // Guardar en CSV
+    std::string csvFilename = "countsketch_heavy_hitters_" + std::to_string(k) + "mers.csv";
+    std::ofstream csvFile(csvFilename);
+    
+    if (csvFile.is_open()) {
+        csvFile << "rank,kmer,estimated_frequency,threshold_used,total_kmers,phi_value,kmer_length\\n";
         
-        if (!heavyHitters.empty()) {
-            std::cout << "\nTop Heavy Hitters:" << std::endl;
-            std::cout << "Rank\tK-mer\t\t\tFrecuencia Estimada" << std::endl;
-            std::cout << "----------------------------------------------------" << std::endl;
-            
-            int showCount = std::min(20, (int)heavyHitters.size()); // Mostrar top 20
-            for (int i = 0; i < showCount; i++) {
-                std::cout << (i+1) << "\t" << heavyHitters[i].first 
-                         << "\t" << heavyHitters[i].second << std::endl;
-            }
-            
-            if (heavyHitters.size() > 20) {
-                std::cout << "... y " << (heavyHitters.size() - 20) << " más." << std::endl;
-            }
-        } else {
-            std::cout << "\nNo se encontraron heavy hitters con umbral >= " << k21mersBoundary << std::endl;
+        for (size_t i = 0; i < heavyHitters.size(); i++) {
+            csvFile << (i + 1) << "," 
+                   << heavyHitters[i].first << "," 
+                   << heavyHitters[i].second << "," 
+                   << umbralFrecuencia << "," 
+                   << totalKmers << "," 
+                   << std::scientific << std::setprecision(1) << phi << ","
+                   << k << "\\n";
         }
         
-        // Guardar resultados en CSV
-        std::string csvFilename = "countsketch_heavy_hitters.csv";
-        std::ofstream csvFile(csvFilename);
+        csvFile.close();
+        std::cout << "Guardado en: " << csvFilename << std::endl;
+        std::cout << "Registros: " << heavyHitters.size() << std::endl;
+    } else {
+        std::cerr << "Error creando CSV: " << csvFilename << std::endl;
+    }
+    
+    return heavyHitters;
+}
+
+int main() {
+    try {
+        std::cout << "╔══════════════════════════════════════════════════════════════╗" << std::endl;
+        std::cout << "║           COUNTSKETCH PARA 21-MERS Y 31-MERS               ║" << std::endl;
+        std::cout << "╚══════════════════════════════════════════════════════════════╝" << std::endl;
         
-        if (csvFile.is_open()) {
-            // Escribir header del CSV
-            csvFile << "rank,kmer,estimated_frequency,threshold_used,total_kmers,phi_value\n";
-            
-            // Escribir datos de heavy hitters
-            for (size_t i = 0; i < heavyHitters.size(); i++) {
-                csvFile << (i + 1) << "," 
-                       << heavyHitters[i].first << "," 
-                       << heavyHitters[i].second << "," 
-                       << k21mersBoundary << "," 
-                       << totalKmers << "," 
-                       << std::scientific << std::setprecision(1) << phi << "\n";
-            }
-            
-            csvFile.close();
-            std::cout << "\n💾 Heavy hitters guardados en: " << csvFilename << std::endl;
-            std::cout << "📊 Total de registros: " << heavyHitters.size() << std::endl;
-        } else {
-            std::cerr << "❌ Error: No se pudo crear el archivo CSV " << csvFilename << std::endl;
-        }
+        LectorGenomas testReader("Genomas");
         
-        std::cout << "\n=== Extracción completada ===" << std::endl;
+        auto heavyHitters21 = procesarCountSketch(21, 2e-6, "Procesando 21-mers");  
+        auto heavyHitters31 = procesarCountSketch(31, 6e-6, "Procesando 31-mers");
+        
+        // Resumen final
+        std::cout << "\n╔══════════════════════════════════════════════════════════════╗" << std::endl;
+        std::cout << "║                    RESUMEN FINAL                           ║" << std::endl;
+        std::cout << "╚══════════════════════════════════════════════════════════════╝" << std::endl;
+        
+        std::cout << "21-mers Heavy Hitters: " << heavyHitters21.size() << std::endl;
+        std::cout << "31-mers Heavy Hitters: " << heavyHitters31.size() << std::endl;
+        
+        std::cout << "\nArchivos generados:" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
