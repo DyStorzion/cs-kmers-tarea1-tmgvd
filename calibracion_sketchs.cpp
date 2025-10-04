@@ -77,12 +77,12 @@ int main() {
     }
     cout << "Se cargaron " << groundTruth.size() << " k-mers únicos" << endl;
 
-    std::string archivocsv = "CSV/calibracion_countsketch_" + std::to_string(k) + "mer.csv";
+    std::string archivocsv = "results_calibracion/calibracion_countsketch_" + std::to_string(k) + "mer.csv";
     ofstream out(archivocsv);
     out << "sketch,d,w,tamano,mae,mre\n";
 
     vector<int> d_vals = {3, 5, 7};
-    vector<int> w_vals = {20000, 25000, 35000};
+    vector<int> w_vals = {25000, 35000, 40000};
 
     
     
@@ -108,12 +108,12 @@ int main() {
     }
     cout << "Resultados guardados en " << archivocsv << endl;
     
-    archivocsv = "CSV/calibracion_towersketch_" + std::to_string(k) + "mer.csv";
+    archivocsv = "results_calibracion/calibracion_towersketch_" + std::to_string(k) + "mer.csv";
     ofstream tsout(archivocsv);
     tsout << "sketch,d,w8,w16,w32,tamano,mae,mre\n";
 
-    std::vector<int> w8_vals = {75000, 100000};
-    std::vector<int> w16_vals = {7500, 10000};
+    std::vector<int> w8_vals = {90000, 100000};
+    std::vector<int> w16_vals = {15000, 20000};
     std::vector<int> w32_vals = {2000, 5000};
 
     for (int d : d_vals) {

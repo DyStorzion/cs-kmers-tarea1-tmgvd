@@ -21,7 +21,7 @@ std::string getCanonical(const std::string &s) {
 // Función para procesar k-mers de una longitud específica
 std::vector<std::pair<std::string, int>> procesarTowerSketch(int k, double phi) {
     //Parámetros del Tower Sketch
-    int d = 7, w8 = 140000, w16 = 1, w32 = 1;
+    int d = 7, w8 = 123, w16 = 1, w32 = 1;
     
     TowerSketch sketch(d, w8, d, w16, d, w32);
     LectorGenomas reader("Genomas");
@@ -151,8 +151,6 @@ int main() {
         std::cout << "|--------------------------------------------------------------|" << std::endl;
         std::cout << "|           TOWER SKETCH PARA 21-MERS Y 31-MERS                 |" << std::endl;
         std::cout << "|--------------------------------------------------------------|" << std::endl;
-        
-        LectorGenomas testReader("Genomas");
         
         auto heavyHitters21 = procesarTowerSketch(21, 2e-6);  
         auto heavyHitters31 = procesarTowerSketch(31, 4e-6);

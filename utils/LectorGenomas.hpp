@@ -138,6 +138,7 @@ public:
      * Reinicia la posición actual al inicio de la secuencia
      */
     void reset() {
+        currentFileIndex = 0;
         currentPosition = 0;
     }
 
