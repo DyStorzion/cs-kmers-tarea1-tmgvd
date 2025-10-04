@@ -63,7 +63,7 @@ std::string canonical(const std::string &s) {
 }
 
 int main() {
-    int k = 21;
+    int k = 31;
     string dir = "Genomas";
 
     LectorGenomas lector(dir);
@@ -81,7 +81,7 @@ int main() {
     ofstream out(archivocsv);
     out << "sketch,d,w,tamano,mae,mre\n";
 
-    vector<int> d_vals = {3, 5, 7};
+    vector<int> d_vals = {5, 7};
     vector<int> w_vals = {25000, 35000, 40000};
 
     
@@ -112,9 +112,9 @@ int main() {
     ofstream tsout(archivocsv);
     tsout << "sketch,d,w8,w16,w32,tamano,mae,mre\n";
 
-    std::vector<int> w8_vals = {90000, 100000};
-    std::vector<int> w16_vals = {15000, 20000};
-    std::vector<int> w32_vals = {2000, 5000};
+    std::vector<int> w8_vals = {70000, 90000};
+    std::vector<int> w16_vals = {20000, 30000};
+    std::vector<int> w32_vals = {2000};
 
     for (int d : d_vals) {
         for (int w8 : w8_vals) {
