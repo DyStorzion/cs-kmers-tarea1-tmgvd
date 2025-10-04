@@ -1,1 +1,3 @@
-rank,kmer,estimated_frequency,threshold_used,total_kmers,phi_value,kmer_length\n
+version https://git-lfs.github.com/spec/v1
+oid sha256:9a8e16458632f4e16772fca5d160b54faf529e1fbe7001214f6fdfbae1dd96dd
+size 572204800
